@@ -1,0 +1,309 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Vokabeltrainer</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f8ff;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .main-title {
+            font-size: 48px;
+            color: #4CAF50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .container {
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        .word-count {
+            font-size: 0.6em;
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            margin-left: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button.check {
+            background-color: #4CAF50; /* Green for check/success actions */
+        }
+
+        button.start {
+            background-color: #2196F3; /* Blue for primary actions */
+        }
+
+        button.manage {
+            background-color: #9c27b0; /* Purple for management actions */
+        }
+
+        button.cancel {
+            background-color: #607d8b; /* Blue grey for cancel/close actions */
+        }
+
+        button:hover {
+            filter: brightness(90%);
+            transform: translateY(-1px);
+            transition: all 0.2s;
+        }
+
+        .result {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-content input {
+            margin-bottom: 10px;
+        }
+
+        .modal-content button {
+            margin-top: 10px;
+        }
+
+        .word-list {
+            text-align: left;
+            margin-top: 10px;
+        }
+
+        .word-list div {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .word-list button {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 5px 10px;
+            cursor: pointer;
+            width: auto;
+            margin-top: 0;
+        }
+
+        .word-list button:hover {
+            background-color: #ff1a1a;
+        }
+    </style>
+    <script>
+        let vocabulary = JSON.parse(localStorage.getItem("vocabulary")) || [];
+        let currentWord = null;
+        let isGermanShown = true;
+
+        function saveToLocalStorage() {
+            localStorage.setItem("vocabulary", JSON.stringify(vocabulary));
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = "flex";
+            if (modalId === "wordListModal") {
+                showWordList();
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = "none";
+        }
+
+        function addWord() {
+            const german = document.getElementById("germanWord").value.trim();
+            const english = document.getElementById("englishWord").value.trim();
+
+            if (german && english) {
+                vocabulary.push({ german, english });
+                saveToLocalStorage();
+                // Clear input fields
+                document.getElementById("germanWord").value = "";
+                document.getElementById("englishWord").value = "";
+                updateWordCount();
+                closeModal("addWordModal");
+            } else {
+                alert("Bitte beide Felder ausfüllen!");
+            }
+        }
+
+        function updateWordCount() {
+            const count = vocabulary.length;
+            document.getElementById("wordCount").textContent = `(${count} Wörter)`;
+        }
+
+        // Call this when page loads to initialize the counter
+        window.onload = function() {
+            updateWordCount();
+        }
+
+        function startTraining() {
+            if (vocabulary.length === 0) {
+                alert("Bitte füge zuerst Vokabeln hinzu!");
+                return;
+            }
+
+            const startButton = document.getElementById("startButton");
+            if (startButton.textContent === "Start") {
+                startButton.textContent = "Nächstes Wort";
+            }
+
+            const randomIndex = Math.floor(Math.random() * vocabulary.length);
+            currentWord = vocabulary[randomIndex];
+            isGermanShown = Math.random() < 0.5;
+
+            const wordToShow = isGermanShown ? currentWord.german : currentWord.english;
+            document.getElementById("wordToGuess").textContent = wordToShow;
+            document.getElementById("userGuess").value = "";
+            document.getElementById("result").textContent = "";
+        }
+
+        function checkAnswer() {
+            const userGuess = document.getElementById("userGuess").value.trim();
+            const correctAnswer = isGermanShown ? currentWord.english : currentWord.german;
+
+            if (userGuess.toLowerCase() === correctAnswer.toLowerCase()) {
+                document.getElementById("result").textContent = "Richtig!";
+                document.getElementById("result").style.color = "green";
+            } else {
+                document.getElementById("result").textContent = `Falsch! Die richtige Antwort ist: ${correctAnswer}`;
+                document.getElementById("result").style.color = "red";
+            }
+        }
+
+        function showWordList() {
+            const wordListContainer = document.getElementById("wordList");
+            wordListContainer.innerHTML = "";
+
+            if (vocabulary.length === 0) {
+                wordListContainer.innerHTML = "<p>Keine Wörter vorhanden.</p>";
+                return;
+            }
+
+            vocabulary.forEach((word, index) => {
+                const wordItem = document.createElement("div");
+                wordItem.innerHTML = `
+                    <span>${word.german} - ${word.english}</span>
+                    <button onclick="deleteWord(${index})" style="background-color: #ff4d4d; color: white;">Löschen</button>
+                `;
+                wordListContainer.appendChild(wordItem);
+            });
+        }
+
+        function deleteWord(index) {
+            vocabulary.splice(index, 1);
+            saveToLocalStorage();
+            updateWordCount();
+            showWordList();
+        }
+
+        function deleteAllWords() {
+            if (confirm("Möchtest du wirklich alle Wörter löschen?")) {
+                vocabulary = [];
+                saveToLocalStorage();
+                updateWordCount();
+                showWordList();
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="main-title">Vokabeltrainer</div>
+    <div class="container">
+        <h1>Training <span id="wordCount" class="word-count">(0 Wörter)</span></h1>
+        <p id="wordToGuess" style="font-size: 24px; text-align: center; margin-bottom: 20px;">Drücke "Start", um zu beginnen</p>
+        <input id="userGuess" type="text" placeholder="Deine Antwort">
+        <button class="check" type="button" onclick="checkAnswer()">Überprüfen</button>
+        <button class="start" id="startButton" type="button" onclick="startTraining()">Start</button>
+        <div id="result" class="result"></div>
+        <button class="manage" type="button" onclick="openModal('addWordModal')">Wort hinzufügen</button>
+        <button class="manage" type="button" onclick="openModal('wordListModal')">Wörter anzeigen</button>
+    </div>
+
+    <!-- Add Word Modal -->
+    <div id="addWordModal" class="modal">
+        <div class="modal-content">
+            <h2>Wort hinzufügen</h2>
+            <input id="germanWord" type="text" placeholder="Deutsch">
+            <input id="englishWord" type="text" placeholder="Englisch">
+            <button class="check" type="button" onclick="addWord()">Hinzufügen</button>
+            <button class="cancel" type="button" onclick="closeModal('addWordModal')">Abbrechen</button>
+        </div>
+    </div>
+
+    <!-- Word List Modal -->
+    <div id="wordListModal" class="modal">
+        <div class="modal-content">
+            <h2>Wörterliste</h2>
+            <div id="wordList" class="word-list"></div>
+            <button class="manage" type="button" onclick="deleteAllWords()">Alle löschen</button>
+            <button class="cancel" type="button" onclick="closeModal('wordListModal')">Schließen</button>
+        </div>
+    </div>
+</body>
+</html>
